@@ -1,0 +1,16 @@
+[project]
+name = "my-openlab-experiment"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "tuke-openlab>=0.0.6",
+]
+
+[tool.uv.sources]
+tuke-openlab = { index = "openlab" }
+
+[[tool.uv.index]]
+name = "openlab"
+url = "https://repo.kpi.fei.tuke.sk/repository/pypi/simple"
