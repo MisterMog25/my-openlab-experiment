@@ -12,6 +12,7 @@ To drive the real lab instead, swap simulation_env("...") for production_env().
 
 import time
 
+
 from tuke_openlab import Controller, simulation_env
 from tuke_openlab.lights import Color
 
