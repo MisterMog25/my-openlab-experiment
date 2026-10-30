@@ -1,4 +1,5 @@
 import math
+import random
 import time
 
 from tuke_openlab import Controller, simulation_env
@@ -11,25 +12,15 @@ TOPIC = "mark"
 
 ROWS = 3
 WINDOWS = 8
-SINE_WAVES = 2
 FRAME_SECONDS = 0.05
-SOFT = 2.0              # width of the soft edge of a moving front, in columns
-
-SINE_SPEED_START = 6.0
-SINE_SPEED_END = 16.0
-
-WAVE_HUE_LEFT = 0.50
-WAVE_HUE_RIGHT = 0.87
+SOFT = 2.0
 
 RIM_HUE = 0.08
 RIM_WIDTH = 1.6
 
-# Warm pastel peak (replaces white) and the soft violet the black hole leaves.
 IGNITION = Color(r=255, g=224, b=180)
 AFTERGLOW = Color(r=150, g=140, b=210)
 BG_LEVEL = 0.15
-
-# A dim indigo floor colour: no lamp is ever pure black.
 BACKGROUND = Color(r=18, g=16, b=40)
 
 COOL_STOPS = [
@@ -77,20 +68,6 @@ def _lamp(row, col):
     return (row - 1) * COLUMNS + col
 
 
-def _wave_hue(col):
-    position = 1 - (col - 1) / (COLUMNS - 1)
-    return WAVE_HUE_LEFT + (WAVE_HUE_RIGHT - WAVE_HUE_LEFT) * position
-
-
-def _sine_row(x, phase):
-    return 2 - math.sin(2 * math.pi * SINE_WAVES * x / COLUMNS - phase)
-
-
-def _sine_speed(progress):
-    progress = min(1.0, max(0.0, progress))
-    return SINE_SPEED_START + (SINE_SPEED_END - SINE_SPEED_START) * progress
-
-
 def _fill_windows(frame):
     for w in range(1, WINDOWS + 1):
         color = frame[_window_column(w)]
@@ -98,28 +75,29 @@ def _fill_windows(frame):
             frame[light] = color
 
 
-def _blink_windows(frame, t, base, horizon=0.0, scale=1.0):
+def _party_windows(frame, t, base, horizon=0.0, scale=1.0):
     center = (COLUMNS + 1) / 2
     for w in range(1, WINDOWS + 1):
         if abs(_window_column(w) - center) <= horizon:
-            color = base
-        elif math.sin(t * 20 + w * 1.9) > 0 and scale > 0.02:
-            color = hsv((t * 0.8 + w * 0.11) % 1.0, scale)
+            color = Color()
         else:
-            color = base
+            hue = (w / WINDOWS + t * 0.6) % 1.0
+            bright = scale * (0.4 + 0.6 * abs(math.sin(t * 8 + w * 1.3)))
+            color = hsv(hue, bright) if bright > 0.02 else base
         for light in window(w):
             frame[light] = color
 
 
 def art_star(lights, heat_seconds=20.0, bloom_seconds=3.0, fade_seconds=1.5,
-             dark_seconds=1.0, sine_seconds=7.5, eat_seconds=17.0):
+             dark_seconds=1.0, explosion_seconds=4.0, eat_seconds=11.0):
     bloom_end = heat_seconds + bloom_seconds
     fade_end = bloom_end + fade_seconds
     dark_end = fade_end + dark_seconds
-    sine_end = dark_end + sine_seconds
-    total = sine_end + eat_seconds
+    boom_end = dark_end + explosion_seconds
+    total = boom_end + eat_seconds
     center = (COLUMNS + 1) / 2
     reach = (COLUMNS - 1) / 2
+    base = _scaled(AFTERGLOW, BG_LEVEL)
     start = time.monotonic()
 
     while True:
@@ -169,45 +147,44 @@ def art_star(lights, heat_seconds=20.0, bloom_seconds=3.0, fade_seconds=1.5,
                 frame[light] = BACKGROUND
 
         # 5
-        elif t < sine_end:
+        elif t < boom_end:
             tt = t - dark_end
-            appear = _ease(tt / (sine_seconds * 0.4))
-            speed = _sine_speed(_ease(tt / sine_seconds))
-            base = mix(BACKGROUND, _scaled(AFTERGLOW, BG_LEVEL), appear)
+            p = tt / explosion_seconds
+            fade = 1.0 - 0.7 * _ease(p)
             for c in range(1, COLUMNS + 1):
-                row = _sine_row(c, tt * speed)
-                hue = _wave_hue(c)
+                distance = abs(c - center)
+                core = max(0.0, 1.0 - distance / (2 + tt * 16)) * fade
+                ring = 0.0
+                for speed, width in ((110, 2.5), (78, 3.5), (50, 5.0)):
+                    ring = max(ring, max(0.0, 1.0 - abs(distance - tt * speed) / width) * fade)
+                spark = 1.0 if random.random() < 0.7 * fade else 0.0
+                bright = min(1.0, core + ring + spark)
+                hue = (c / COLUMNS + tt * 1.8) % 1.0
                 for r in range(1, ROWS + 1):
-                    brightness = max(0.0, 1.0 - abs(r - row)) * appear
-                    frame[_lamp(r, c)] = hsv(hue, brightness) if brightness > 0.02 else base
-            _blink_windows(frame, t, base, scale=appear)
+                    frame[_lamp(r, c)] = hsv(hue, bright) if bright > 0.02 else base
+            _party_windows(frame, t, base, scale=fade)
 
         # 6
         else:
-            tt = t - dark_end
-            progress = _ease((t - sine_end) / eat_seconds)
+            tt = t - boom_end
+            x = min(1.0, tt / eat_seconds)
+            progress = 1 - (1 - x) ** 2                 # ease-out: the hole bursts out
             horizon = progress * (reach + 2.5)
-            speed = _sine_speed(_ease(tt / sine_seconds))
-            base = _scaled(AFTERGLOW, BG_LEVEL)
-            hole = Color()
             for c in range(1, COLUMNS + 1):
                 distance = abs(c - center)
-                squeezed = center + (c - center) * (1 - progress)
-                row = _sine_row(squeezed, tt * speed)
-                hue = _wave_hue(c)
                 for r in range(1, ROWS + 1):
-                    sine = max(0.0, 1.0 - abs(r - row))
                     if distance <= horizon:
-                        color = hole
+                        color = Color()
                     else:
                         rim = math.exp(-((distance - horizon) / RIM_WIDTH) ** 2)
-                        brightness = max(sine * (1 - progress), rim)
-                        if brightness <= 0.02:
-                            color = base
-                        else:
-                            color = hsv(RIM_HUE if rim > sine else hue, min(1.0, brightness))
+                        ember = (1 - progress) * 0.35 * (0.5 + 0.5 * math.sin(c * 1.3 + t * 6))
+                        if random.random() < 0.12 * (1 - progress):
+                            ember = 1.0
+                        bright = min(1.0, max(ember, rim))
+                        hue = (c / COLUMNS + t * 0.6) % 1.0
+                        color = hsv(RIM_HUE if rim > ember else hue, bright) if bright > 0.02 else base
                     frame[_lamp(r, c)] = color
-            _blink_windows(frame, t, base, horizon)
+            _party_windows(frame, t, base, horizon=horizon, scale=1 - progress)
 
         lights.set_colors(frame)
         time.sleep(FRAME_SECONDS)
