@@ -5,7 +5,7 @@ from tuke_openlab import Controller, simulation_env
 from tuke_openlab.lights import Color
 
 # Any unique string. Must not contain MQTT wildcards (+, #) or null chars.
-TOPIC = "mysterioushf-demo"
+TOPIC = "andrii"
 
 
 def main():
