@@ -102,52 +102,6 @@ lights.set_colors({1: Color(r=255), 28: Color(b=255)}, fade=500)
 lights.turn_off()
 ```
 
-## Writing your own scene
-
-A scene is an infinite loop that builds a frame and sends it:
-
-```python
-import time
-
-import tuke_openlab
-from tuke_openlab.lights import Color
-
-openlab = tuke_openlab.Controller(tuke_openlab.simulation_env("your-topic"))
-lights = openlab.lights
-
-ROWS, COLUMNS = 3, 27
-
-
-def column(c):
-    """All 3 lamps of column c (c=1 is the rightmost column)."""
-    return [c + r * COLUMNS for r in range(ROWS)]
-
-
-def wave(seconds=15):
-    start = time.monotonic()
-    step = 0
-    while time.monotonic() - start < seconds:
-        frame = {}
-        for i in range(1, COLUMNS + 1):
-            distance = (i - step) % (COLUMNS + 4)
-            if distance < 4:
-                power = 1 - distance / 4            # tail fades out
-                for light in column(i):
-                    frame[light] = Color(r=int(255 * power), g=int(120 * power))
-            else:
-                for light in column(i):
-                    frame[light] = Color()          # off
-        lights.set_colors(frame)                    # one frame = one MQTT message
-        step += 1
-        time.sleep(0.12)
-```
-
-Two ways to animate, and they can be mixed:
-
-- **draw every frame yourself** (`fade=0`) — full control, needed for fast effects;
-- **send rare keyframes with a large `fade`** (e.g. `fade=1500`) — the hardware interpolates,
-  which looks very smooth for slow transitions and costs almost no traffic.
-
 ## Useful commands
 
 ```bash
@@ -156,15 +110,6 @@ uv run mark.py            # run one script in the project environment
 uv add <package>          # add a dependency (updates pyproject.toml and uv.lock)
 uv sync                   # reinstall the environment from uv.lock
 ```
-
-## Troubleshooting
-
-| Symptom | Cause |
-| --- | --- |
-| `TimeoutError` / hangs on start | no access to the TUKE network — connect the VPN |
-| `ValueError: Invalid light ID specified: 98` | ids 98–199 do not exist (the wall is 1–81, windows 82–97) |
-| The lights stopped reacting to your edits | an old process is still running — press `Ctrl+C` |
-| `python mark.py` does nothing useful | always use `uv run mark.py` |
 
 ## Contributing
 
