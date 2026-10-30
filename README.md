@@ -71,10 +71,11 @@ subscribes to the same MQTT topic, so you see exactly what the lamps would show:
 https://openlab.kpi.fei.tuke.sk/simulator/light/<your-topic>
 ```
 
-> ⚠️ **Every person must use their own topic.** Right now `mark.py`, `andrii.py` and
-> `tymofii.py` all contain the same `TOPIC = "mysterioushf-demo"` — that is Mark's simulator.
-> Change it to your own unique ID (your TUKE login is a good choice). Topics must not contain
-> MQTT wildcards (`+`, `#`) or null characters.
+> ⚠️ **Every person must use their own topic.** Each file already has its own one
+> (`mark`, `andrii`, `tymofii`). Keep it unique — the topic namespace is shared with every
+> other student in the lab, so a very generic name can collide. Prefixing with the course,
+> e.g. `handsoff-mark`, is safer. Topics must not contain MQTT wildcards (`+`, `#`)
+> or null characters.
 
 Only use `production_env()` when the lab is free. One laptop, one process — two scripts
 publishing to the same topic overwrite each other.
