@@ -43,6 +43,7 @@ One file per person. Everybody writes their own scene in their own file:
 ├── mark.py       # Mark's experiments
 ├── andrii.py     # Andrii's experiments
 ├── tymofii.py    # Tymofii's experiments
+├── helpers.py    # ready-made building blocks and effects — import them in your file
 ├── pyproject.toml / uv.lock   # dependencies (commit uv.lock)
 └── README.md
 ```
@@ -93,6 +94,15 @@ Everything hangs off the `Controller` object returned above:
 
 The lights grid: **3 rows × 27 columns = ids 1–81** (column 1 is the rightmost one),
 plus **8 windows × 2 lamps = ids 82–97**.
+
+Ready-made effects and grid helpers live in `helpers.py` (ported from the SDK examples):
+
+```python
+from helpers import column, row, windows, mix, hsv          # grid and colors
+from helpers import flag, pulse, rainbow, spectrum, random_colors   # effects
+
+pulse(lights, seconds=15)      # every effect blocks for `seconds`, so they can be chained
+```
 
 ```python
 from tuke_openlab.lights import Color
