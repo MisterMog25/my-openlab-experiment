@@ -27,7 +27,6 @@ RIM_WIDTH = 1.6
 # Warm pastel peak (replaces white) and the soft violet the black hole leaves.
 IGNITION = Color(r=255, g=224, b=180)
 AFTERGLOW = Color(r=150, g=140, b=210)
-HOLE_LEVEL = 0.7
 BG_LEVEL = 0.15
 
 # A dim indigo floor colour: no lamp is ever pure black.
@@ -190,7 +189,7 @@ def art_star(lights, heat_seconds=20.0, bloom_seconds=3.0, fade_seconds=1.5,
             horizon = progress * (reach + 2.5)
             speed = _sine_speed(_ease(tt / sine_seconds))
             base = _scaled(AFTERGLOW, BG_LEVEL)
-            hole = _scaled(AFTERGLOW, HOLE_LEVEL)
+            hole = Color()
             for c in range(1, COLUMNS + 1):
                 distance = abs(c - center)
                 squeezed = center + (c - center) * (1 - progress)
