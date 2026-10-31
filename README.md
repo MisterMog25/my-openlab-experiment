@@ -11,7 +11,7 @@ through the [`tuke-openlab`](https://git.kpi.fei.tuke.sk/open-lab/tuke-openlab-s
 | --- | --- |
 | Mark | [@MisterMog25](https://github.com/MisterMog25) |
 | Andrii | [@AndrewPryladyshev](https://github.com/AndrewPryladyshev) |
-| Tymofei | _GitHub handle to be added_ |
+| Tymofei | [@n0stylist](https://github.com/n0stylist) |
 
 ## Requirements
 
