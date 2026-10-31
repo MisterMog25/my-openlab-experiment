@@ -28,7 +28,8 @@ def main():
         print("\t[1] Run Test Tymofii")
         print("\t[2] Run Test Mark")
         print("\t[3] Run Test Andrii")
-        print("\t[a] All")
+        print("\t[a] Run all")
+        print("\t[l] Run in lab")
         print("\t[q] Quit")
         print("-" * 30)
         
@@ -55,6 +56,9 @@ def main():
         elif (choice == "a"):
             for i in SCRIPTS:
                 subprocess.run([sys.executable, SCRIPTS[i]], check=True)
+        elif choice == "l":
+            for i in SCRIPTS:
+                subprocess.run([sys.executable, SCRIPTS[i]], "--lab")
         else:
             print("\n Invalid choice. Please enter 1, 2, 3, 'a' or 'q'.")
 
