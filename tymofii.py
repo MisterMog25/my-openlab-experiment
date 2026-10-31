@@ -208,6 +208,7 @@ def sin_wave(seconds=10, dt=0.05):
         events.append((t, frame, fade))
     return events
 
+ 
 def smooth_lines(seconds=10, dt=0.05, wave_len = 15, wave_amp = 2, row1_lead=4, row3_lead=4):
 
     fade = int(dt * 1000)
