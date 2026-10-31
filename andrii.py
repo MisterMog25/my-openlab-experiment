@@ -1,7 +1,6 @@
 import time
 import random
 import math
-import main
 import sys
 
 from tuke_openlab import Controller, simulation_env
@@ -70,6 +69,12 @@ def ripples(lights, seconds=20, delay=0.04, spawn_interval=0.4, wave_speed=8.0, 
         # 5. Отправка кадра на контроллер
         lights.set_colors(frame)
         time.sleep(delay)
+
+
+def show(lights):
+    rainbow(lights, seconds=3, delay=0.01, brightness=1.0)
+    ripples(lights, ring_width=4.0, spawn_interval=round(random.uniform(0.8, 1.2), 2),
+            delay=0.04, wave_speed=10.0)
 
 
 def main():

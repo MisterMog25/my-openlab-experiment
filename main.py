@@ -1,66 +1,63 @@
-"""TUKE OpenLab SDK — starter experiment.
+"""The full show: three scenes in a row, with a colourful transition between them.
 
-Run against the simulator (safe, nothing real moves):
+    uv run main.py          # simulator  (topic: handsoff-show)
+    uv run main.py --lab    # real lab
 
-    uv run main.py
-
-The SDK prints the matching simulator URL, e.g.:
-    https://openlab.kpi.fei.tuke.sk/simulator/light/mysterioushf-demo
-
-To drive the real lab instead, swap simulation_env("...") for production_env().
+Everything runs in ONE process with ONE MQTT connection, so the scenes share
+the same wall and the transitions are smooth.
 """
 
-import subprocess
 import sys
+import time
 
-# Map menu choices to your script filenames
-SCRIPTS = {
-    "1": "tymofii.py",
-    "2": "mark.py",
-    "3": "andrii.py"
-}
+from tuke_openlab import Controller, production_env, simulation_env
+from tuke_openlab.lights import Color
+
+from helpers import COLUMNS, column, hsv, windows
+import andrii
+import mark
+import tymofii
+
+SHOW_TOPIC = "handsoff-show"
+
+
+def transition(lights, seconds=3.0):
+    """A colourful wave wipes across the wall, then fades out."""
+    start = time.monotonic()
+    while True:
+        t = time.monotonic() - start
+        if t >= seconds:
+            break
+        fade = 1.0 - max(0.0, (t - seconds * 0.5) / (seconds * 0.5))
+        crest = t * 14
+        frame = {}
+        for c in range(1, COLUMNS + 1):
+            hue = 0.5 + 0.37 * (1 - c / COLUMNS)
+            power = max(0.0, 1.0 - abs(c - crest) / 5.0) * fade
+            for light in column(c):
+                frame[light] = hsv(hue, power) if power > 0.02 else Color()
+        for w in windows():
+            frame[w] = Color()
+        lights.set_colors(frame)
+        time.sleep(0.05)
+
 
 def main():
-    while True:
-        print("\n" + "="*30)
-        print("   LIGHT SHOW CONTROL PANEL")
-        print("="*30)
-        print("  [1] Run Test Tymofii")
-        print("  [2] Run Test Mark")
-        print("  [3] Run Test Andrii")
-        print("  [a] Run all")
-        print("  [l] Run in lab")
-        print("  [q] Quit")
-        print("-" * 30)
-        
-        choice = input("Select a pattern (1-3 or a or q): ").strip().lower()
-        
-        if choice == 'q':
-            print("Exiting light show controller. Goodbye!")
-            break
-            
-        if choice in SCRIPTS:
-            script_name = SCRIPTS[choice]
-            print(f"\n Launching {script_name}...")
-            print(" Tip: Press Ctrl+C at any time to stop the show and return to this menu.\n")
-            
-            try:
-                # Run the chosen script using the current Python environment
-                subprocess.run([sys.executable, script_name], check=True)
-            except KeyboardInterrupt:
-                print(f"\n Stopped {script_name}.")
-            except subprocess.CalledProcessError as e:
-                print(f"\n Error: {script_name} crashed with exit code {e.returncode}")
-            except FileNotFoundError:
-                print(f"\n Error: Could not find '{script_name}' in this folder. Make sure the file exists!")
-        elif (choice == "a"):
-            for i in SCRIPTS:
-                subprocess.run([sys.executable, SCRIPTS[i]], check=True)
-        elif choice == "l":
-            for i in SCRIPTS:
-                subprocess.run([sys.executable, SCRIPTS[i]], "--lab")
-        else:
-            print("\n Invalid choice. Please enter 1, 2, 3, 'a' or 'q'.")
+    env = production_env() if "--lab" in sys.argv else simulation_env(SHOW_TOPIC)
+    controller = Controller(env)
+    lights = controller.lights
+    kind = "production" if not env.is_simulation else "simulation"
+    print(f"Connected to {kind} (topic={SHOW_TOPIC})")
+
+    scenes = [("Tymofii", tymofii.scene), ("Mark", mark.show), ("Andrii", andrii.show)]
+    for name, scene in scenes:
+        print(f"--- {name} ---")
+        scene(lights)
+        transition(lights)
+
+    lights.turn_off()
+    print("Done.")
+
 
 if __name__ == "__main__":
     main()

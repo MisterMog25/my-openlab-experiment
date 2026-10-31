@@ -195,6 +195,10 @@ def art_star(lights, heat_seconds=20.0, bloom_seconds=1.2, fade_seconds=1.5,
         time.sleep(FRAME_SECONDS)
 
 
+def show(lights):
+    art_star(lights)
+
+
 def main():
     env = simulation_env(TOPIC)
     controller = Controller(env)
