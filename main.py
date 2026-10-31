@@ -23,14 +23,14 @@ SCRIPTS = {
 def main():
     while True:
         print("\n" + "="*30)
-        print("\t\tLIGHT SHOW CONTROL PANEL")
+        print("   LIGHT SHOW CONTROL PANEL")
         print("="*30)
-        print("\t[1] Run Test Tymofii")
-        print("\t[2] Run Test Mark")
-        print("\t[3] Run Test Andrii")
-        print("\t[a] Run all")
-        print("\t[l] Run in lab")
-        print("\t[q] Quit")
+        print("  [1] Run Test Tymofii")
+        print("  [2] Run Test Mark")
+        print("  [3] Run Test Andrii")
+        print("  [a] Run all")
+        print("  [l] Run in lab")
+        print("  [q] Quit")
         print("-" * 30)
         
         choice = input("Select a pattern (1-3 or a or q): ").strip().lower()
