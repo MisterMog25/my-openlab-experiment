@@ -23,15 +23,16 @@ SCRIPTS = {
 def main():
     while True:
         print("\n" + "="*30)
-        print("   LIGHT SHOW CONTROL PANEL")
+        print("\t\tLIGHT SHOW CONTROL PANEL")
         print("="*30)
-        print("  [1] Run Test Tymofii")
-        print("  [2] Run Test Mark")
-        print("  [3] Run Test Andrii")
-        print("  [q] Quit")
+        print("\t[1] Run Test Tymofii")
+        print("\t[2] Run Test Mark")
+        print("\t[3] Run Test Andrii")
+        print("\t[a] All")
+        print("\t[q] Quit")
         print("-" * 30)
         
-        choice = input("Select a pattern (1-3 or q): ").strip().lower()
+        choice = input("Select a pattern (1-3 or a or q): ").strip().lower()
         
         if choice == 'q':
             print("Exiting light show controller. Goodbye!")
@@ -51,8 +52,11 @@ def main():
                 print(f"\n Error: {script_name} crashed with exit code {e.returncode}")
             except FileNotFoundError:
                 print(f"\n Error: Could not find '{script_name}' in this folder. Make sure the file exists!")
+        elif (choice == "a"):
+            for i in SCRIPTS:
+                subprocess.run([sys.executable, SCRIPTS[choice]], check=True)
         else:
-            print("\n Invalid choice. Please enter 1, 2, 3, or 'q'.")
+            print("\n Invalid choice. Please enter 1, 2, 3, 'a' or 'q'.")
 
 if __name__ == "__main__":
     main()
