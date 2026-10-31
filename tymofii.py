@@ -247,7 +247,7 @@ def smooth_lines(seconds=10, dt=0.05, wave_len = 15, wave_amp = 2, row1_lead=4, 
     return events
 
 
-def scene(lights):
+def show(lights):
     """
     # 1. windows instantly full cyan (they stay lit through the next steps)
     lights.set_color(windows(), CYAN, 0)
@@ -316,7 +316,7 @@ def main():
 
     print(f"Connected to {'simulation' if env.is_simulation else 'production'} (topic={TOPIC})")
 
-    scene(controller.lights)
+    show(controller.lights)
 
     controller.lights.turn_off()
     print("Done.")

@@ -25,7 +25,7 @@ def main():
     kind = "production" if not env.is_simulation else "simulation"
     print(f"Connected to {kind} (topic={SHOW_TOPIC})")
 
-    scenes = [("Mark", mark.show), ("Andrii", andrii.show), ("Tymofii", tymofii.scene)]
+    scenes = [("Mark", mark.show), ("Andrii", andrii.show), ("Tymofii", tymofii.show)]
     for name, scene in scenes:
         print(f"--- {name} ---")
         scene(lights)
