@@ -16,7 +16,7 @@ FRAME_SECONDS = 0.05
 SOFT = 2.0              # width of the soft edge of a moving front, in columns
 
 SINE_SPEED_START = 6.0
-SINE_SPEED_END = 16.0
+SINE_SPEED_END = 9.0
 
 WAVE_HUE_LEFT = 0.50
 WAVE_HUE_RIGHT = 0.87
