@@ -3,6 +3,8 @@
 Controlling the lights and screens of [OpenLab](https://kpi.fei.tuke.sk/openlab) at FEI TUKE
 through the [`tuke-openlab`](https://git.kpi.fei.tuke.sk/open-lab/tuke-openlab-sdk) SDK.
 
+![The light show](docs/show.gif)
+
 ## Authors
 
 | Name | GitHub |
@@ -26,7 +28,7 @@ no manual `pip`, no need to activate the virtual environment.
 git clone https://github.com/MisterMog25/my-openlab-experiment.git
 cd my-openlab-experiment
 uv sync          # creates .venv/ from uv.lock — the same versions for everyone
-uv run main.py   # opens the menu
+uv run main.py   # runs the whole show (~90 s) against the simulator
 ```
 
 Ready-made SDK examples (flags, pulse, spectrum, interpolation helpers) are in
@@ -39,22 +41,25 @@ One file per person. Everybody writes their own scene in their own file:
 
 ```
 .
-├── main.py       # menu: launches one of the scripts below, or all of them
-├── mark.py       # Mark's experiments
-├── andrii.py     # Andrii's experiments
-├── tymofii.py    # Tymofii's experiments
+├── main.py       # the show: runs the three scenes in a row, in one process
+├── mark.py       # Mark's scene
+├── andrii.py     # Andrii's scene
+├── tymofii.py    # Tymofii's scene
 ├── helpers.py    # ready-made building blocks and effects — import them in your file
+├── docs/show.gif # demo recording
 ├── pyproject.toml / uv.lock   # dependencies (commit uv.lock)
 └── README.md
 ```
 
 ```bash
-uv run main.py      # menu: [1] Tymofii  [2] Mark  [3] Andrii
-uv run mark.py      # or run your own file directly
+uv run main.py          # the full show: Mark -> Andrii -> Tymofii
+uv run main.py --lab    # the same, on the real lamps
+uv run mark.py          # or run your own file alone
 ```
 
-> `main.py` starts every scene as a **separate process** with `subprocess.run`, so only one
-> scene runs at a time. For the final show we will glue the scenes into one program.
+> `main.py` connects **once** and calls every author's `show(lights)` in order, so the scenes
+> share one MQTT connection and one topic (`handsoff-show`). Every author also keeps a
+> `show(lights)` entry point, so a scene can be run alone with `uv run <name>.py`.
 
 ## Which environment and which topic
 
@@ -115,8 +120,9 @@ lights.turn_off()
 ## Useful commands
 
 ```bash
-uv run main.py            # the menu
-uv run mark.py            # run one script in the project environment
+uv run main.py            # the full show (simulator, topic handsoff-show)
+uv run main.py --lab      # the full show (real lamps)
+uv run mark.py            # run one author's file alone
 uv add <package>          # add a dependency (updates pyproject.toml and uv.lock)
 uv sync                   # reinstall the environment from uv.lock
 ```
