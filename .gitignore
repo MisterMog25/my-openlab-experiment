@@ -9,3 +9,6 @@ wheels/
 # Virtual environments
 .venv
 .vscode
+# raw screen recordings
+*.mov
+*.mp4
