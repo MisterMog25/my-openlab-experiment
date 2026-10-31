@@ -299,7 +299,7 @@ def scene(lights):
     # 10. cyan sea fills the bottom row (1 s)
     run_events(lights, sea_events(state, seconds=1.0))
     """
-    # 12. waves appear and move to the right along row 2
+    # 12. waves appear and move to the right 
     events = []
     run_events(lights, smooth_lines())
     run_events(lights, sin_wave())
