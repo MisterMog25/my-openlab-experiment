@@ -54,7 +54,7 @@ def main():
                 print(f"\n Error: Could not find '{script_name}' in this folder. Make sure the file exists!")
         elif (choice == "a"):
             for i in SCRIPTS:
-                subprocess.run([sys.executable, SCRIPTS[choice]], check=True)
+                subprocess.run([sys.executable, SCRIPTS[i]], check=True)
         else:
             print("\n Invalid choice. Please enter 1, 2, 3, 'a' or 'q'.")
 
