@@ -77,7 +77,6 @@ def soft_sweep(lights, columns_at, start, end, seconds, soft=SOFT):
     run_events(lights, events)
 
 def brighten(lights, start, end, seconds=0.5, steps=5):
-    """Whole grid goes start -> end in `steps` quick stages (one set_colors message each)."""
     dt = seconds / steps
     fade = int(dt * 1000)
     ids = grid()
@@ -148,10 +147,6 @@ def window_swap_events(seconds):
     return events
 
 
-SUN = Color(255, 170, 0, 40)        # warm sun
-SUN_WIDTH = 9                       # center columns taken by the sun (rows 2 and 3)
-WAVE_SECONDS = 10.0                  # how long the waves run before the scene ends
-WAVE_SPEED = 3.0                    # columns per second
 
 
 def row_id(r, c):
@@ -182,55 +177,74 @@ def sea_events(state, seconds=1.0, soft=3, group=3):
     return events
 
 
-def sun_columns():
-    half = SUN_WIDTH // 2
-    return list(range(CENTER - half, CENTER + half + 1))
 
 
-def sun_events(state, seconds=1.0, soft=3):
-    """Sun comes out from the bottom center: row 2 first, then row 1 (top),
-    spreading outwards from the center column."""
-    half = SUN_WIDTH // 2
-    dt = seconds / (2 * half + soft)                # 0.1 s for the defaults
-    fade = int(dt * 1000)
-    row1_delay = 3 * dt                             # the top row starts a little after the middle one
-    events = []
-    for d in range(half + 1):
-        cols = {CENTER - d, CENTER + d}
-        ramp(events, state, [row_id(2, c) for c in cols], SUN, d * dt, dt, fade, soft)
-        ramp(events, state, [row_id(1, c) for c in cols], SUN, row1_delay + d * dt, dt, fade, soft)
-    return events
 
-WAVE_CYAN_LEVEL = 0.6        # darker cyan: 1.0 = same as CYAN, lower = darker
+
+
+WAVE_LEVEL = 0.6        #lower = darker
 WAVE_LENGTH = 14             # columns per full sine period (27 columns -> ~2 waves on screen)
-WAVE_SPEED = 3.0             # columns per second
-WAVE_AMPLITUDE = 0.9         # how far the water surface swings (0..1)
-WAVE_CYAN = scale(CYAN, WAVE_CYAN_LEVEL)
+WAVE_SPEED = 4.0             # columns per second
+WAVE_AMPLITUDE = 1.3         # how far the water surface swings (0..1)
+WAVE_MAGENTA = scale(MAGENTA, WAVE_LEVEL)
 
-def wave_events(seconds=WAVE_SECONDS, dt=0.12):
-    """
-    Sine-shaped water surface running to the right (towards column 1) over rows 2 and 3.
-    The surface height is H = 1 + A*sin(...), measured in rows from the bottom:
-      row 3 covers heights 0..1, row 2 covers heights 1..2.
-    Each row is filled with the dark wave cyan in proportion to how much of it is under the surface.
-    """
-    sun = set(sun_columns())
+def sin_wave(seconds=10, dt=0.05):
+
     fade = int(dt * 1000)
     events = []
     for i in range(int(seconds / dt)):
         t = i * dt
-        amp = min(1.0, t / 2.0)                                   # wave fades in over the first 2 s
+        amp = min(1.0, t / 2.0)       
         frame = {}
         for c in range(1, COLUMNS + 1):
-            phase = 2 * math.pi * (c + WAVE_SPEED * t) / WAVE_LENGTH   # +t -> pattern moves to lower c = right
-            h = 1 + WAVE_AMPLITUDE * math.sin(phase)                   # 0.1 .. 1.9
-            cover3 = min(1.0, h)                                       # bottom row
-            cover2 = max(0.0, min(1.0, h - 1))                         # middle row
-            frame[row_id(3, c)] = mix(CYAN, WAVE_CYAN, cover3 * amp)
-            if c not in sun:                                           # the sun stays solid
-                frame[row_id(2, c)] = mix(MAGENTA, WAVE_CYAN, cover2 * amp)
+            phase = 2 * math.pi * (c + WAVE_SPEED * t) / WAVE_LENGTH 
+            h = 1.5 + WAVE_AMPLITUDE * math.sin(phase)                  
+            cover3 = max(0.0, min(1.0, h))                                      
+            cover2 = max(0.0, min(1.0, h - 1))
+            cover1 = max(0.0, min(1.0, h - 2))
+            frame[row_id(3, c)] = mix(CYAN, MAGENTA, cover3 * amp)
+            frame[row_id(2, c)] = mix(CYAN, MAGENTA, cover2 * amp)
+            frame[row_id(1, c)] = mix(CYAN, MAGENTA, cover1 * amp)
         events.append((t, frame, fade))
     return events
+
+def smooth_lines(seconds=10, dt=0.05, wave_len = 15, wave_amp = 2, row1_lead=4, row3_lead=4):
+
+    fade = int(dt * 1000)
+    events = []
+
+
+    def height(c, shift, t):
+        phase = 2 * math.pi * (c + shift + WAVE_SPEED * t) / wave_len
+        return 1.0 + wave_amp * math.sin(phase)
+
+
+
+    for i in range(int(seconds / dt)):
+        t = i * dt
+        amp = min(1.0, t / 2.0) * .9                                  # wave fades in over the first 2 s
+        frame = {}
+        for c in range(1, COLUMNS + 1):
+
+            h1 = height(c, -row1_lead, t)              # behind
+            h2 = height(c, 0, t)                      
+            h3 = height(c, +row3_lead, t)               # ahead
+
+            phase = 2 * math.pi * (c + WAVE_SPEED * t) / wave_len 
+            h = 1.0 + wave_amp * math.sin(phase)  
+
+            cover3 = max(0.0, min(1.0, h3))                                    
+            cover2 = max(0.0, min(1.0, h2 - 1))
+            cover1 = max(0.0, min(1.0, h1))
+
+            frame[row_id(3, c)] = mix(CYAN, MAGENTA, cover3 * amp)
+
+            frame[row_id(2, c)] = mix(CYAN, MAGENTA, cover2 * amp)
+
+            frame[row_id(1, c)] = mix(CYAN, MAGENTA, cover1 * amp )
+        events.append((t, frame, fade))
+    return events
+
 
 def scene(lights):
     """
@@ -254,7 +268,7 @@ def scene(lights):
     # 5. turn off (0.25 s)
     lights.turn_off()
     time.sleep(0.25)
-    """
+
     # 6 + 7. two clashes back-to-back (3 s each), windows cross-fading meanwhile
     a = [window(i)[0] for i in range(1, WINDOWS + 1)]
     b = [window(i)[1] for i in range(1, WINDOWS + 1)]
@@ -283,12 +297,13 @@ def scene(lights):
 
     # 10. cyan sea fills the bottom row (1 s)
     run_events(lights, sea_events(state, seconds=1.0))
-
-    # 11. sun comes out from the bottom center, taking the center of rows 2 and 3 (1 s)
-   # run_events(lights, sun_events(state, seconds=1.0))
-
+    """
     # 12. waves appear and move to the right along row 2
-    run_events(lights, wave_events())
+    events = []
+    run_events(lights, smooth_lines())
+    run_events(lights, sin_wave())
+
+   
 
     # END OF SCENE
 
