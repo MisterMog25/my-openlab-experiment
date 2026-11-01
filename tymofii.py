@@ -11,6 +11,7 @@ WINDOWS = 8
 
 MAGENTA = Color.from_hex_string("FF007200")
 CYAN = Color.from_hex_string("14E5FF00")
+BLACK = Color()
 CYAN_W100 = Color(CYAN.r, CYAN.g, CYAN.b, 100)   
 DIM_CYAN_LEVEL = 0.4      
 SOFT = 12                       
@@ -282,7 +283,16 @@ def move_lights(items, direction="right", seconds=5.0, speed=3.0,background=None
         events.append((offset + t, frame, fade))
     return events
 
+class Connect_windows:
+    def __init__(self):
+        self.events = []
+        self.t = 0.0
 
+    def add(self, events):
+        if not events:
+            return
+        self.events += [(self.t + t, frame, fade) for t, frame, fade in events]
+        self.t += max(t for t, _, _ in events)
 
 
 def show(lights):
@@ -334,48 +344,59 @@ def show(lights):
 
     events = []
     state = {}                                   
-    for i in range(2):                           
+    for i in range(4):                           
         left, right = (MAGENTA, CYAN) if i % 2 == 0 else (CYAN, MAGENTA)
         events += clash_events(i * 3.0, left, right, state, seconds=3.0)
-    events += window_swap_events(6)            
+
+    events += window_swap_events(12)               
     run_events(lights, events)
+
     time.sleep(0.5)
     
    # run_events(lights, events)
    # time.sleep(0.5)
 
-    # 8. turn off 
+    # 8. turn off
     lights.turn_off()
-    state.clear()                                  
+    state.clear()
     time.sleep(0.75)
 
-    # 9. magenta appears from the bottom and fills the screen
-    run_events(lights, sky_events(state, seconds=3.0))
 
-    # 10. cyan fill 
-    run_events(lights, row_fill_events(state, seconds=1.00, row=3))
-    run_events(lights, row_fill_events(state, seconds=1.00, row=2))
-    run_events(lights, row_fill_events(state, seconds=1.00, row=1))
+    lights.set_colors({**{l: CYAN for l in a}, **{l: MAGENTA for l in b}}, 0) 
+    time.sleep(0.1)
+
+    tl = Connect_windows()
+
+    # 9. magenta appears from the bottom and fills the screen
+    tl.add(sky_events(state, seconds=3.0))
+
+    # 10. cyan fill
+    tl.add(row_fill_events(state, seconds=1.0, row=3))
+    tl.add(row_fill_events(state, seconds=1.0, row=2))
+    tl.add(row_fill_events(state, seconds=1.0, row=1))
 
     # 11. two slashes
-    events = []
-    run_events(lights, move_lights(arrow, direction="right", seconds=2.1, speed=15, background=CYAN, wrap=False)
-) 
-    run_events(lights, move_lights(back_arrow, direction="left", seconds=2.1, speed=15, background=CYAN, wrap=False)
-) 
-    
-    # 12. waves to the right 
-    events = []
-    run_events(lights, smooth_lines())
+    tl.add(move_lights(arrow, direction="right", seconds=2.1, speed=15, background=CYAN))
+    tl.add(move_lights(back_arrow, direction="left", seconds=2.1, speed=15, background=CYAN))
 
-    run_events(lights, row_fill_events(state, seconds=1.0, row=1, color=MAGENTA))
-    run_events(lights, row_fill_events(state, seconds=1.00, row=2, color=MAGENTA))
-    run_events(lights, row_fill_events(state, seconds=1.00, row=3, color=MAGENTA))
-    run_events(lights, sin_wave())
+    # 12. waves to the right, magenta fill and sine wave
+    tl.add(smooth_lines())
+    tl.add(row_fill_events(state, seconds=1.0, row=1, color=MAGENTA))
+    tl.add(row_fill_events(state, seconds=1.0, row=2, color=MAGENTA))
+    tl.add(row_fill_events(state, seconds=1.0, row=3, color=MAGENTA))
+    tl.t += 0.5
+    tl.add(sin_wave())
 
-   
+    # windows
+    tl.events += window_swap_events(math.ceil(tl.t))
+
+    run_events(lights, tl.events)
+
+    lights.set_color(windows(), BLACK, 0)
+    fill_from_edges(lights, scale(BLACK, DIM_CYAN_LEVEL), 4.0)
 
     # END OF SCENE
+
 
 
 def main():
