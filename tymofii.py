@@ -276,7 +276,7 @@ def show(lights):
     run_events(lights, tl.events)
 
     lights.set_color(windows(), BLACK, 0)
-    fill_from_edges(lights, scale(BLACK, DIM_CYAN_LEVEL), 4.0)
+    fill_from_edges(lights, scale(BLACK, DIM_CYAN_LEVEL), 5.0)
 
 
 def main():
