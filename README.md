@@ -1,6 +1,6 @@
 # OpenLab Light Show — TUKE Hands-Off
 
-A 90-second light show on the 97 lamps and 8 windows of
+A 2-minute light show on the 97 lamps and 8 windows of
 [OpenLab](https://kpi.fei.tuke.sk/openlab) at FEI TUKE, driven by Python through the
 [`tuke-openlab`](https://git.kpi.fei.tuke.sk/open-lab/tuke-openlab-sdk) SDK.
 
@@ -15,10 +15,10 @@ One process connects once and plays three scenes in a row, then exits:
 | Order | Author | Scene | Length |
 | --- | --- | --- | --- |
 | 1 | Mark | A heat-map "star" ignites in the centre and floods the whole grid, cools down and fades to black; then a coloured sine wave runs across the grid and is swallowed back into the centre | ~50 s |
-| 2 | Andrii | A rainbow sweeps the grid, then ripples expand from random points | ~23 s |
-| 3 | Tymofii | Two smooth cyan/magenta sine waves — parallel lines first, then a travelling wave | ~20 s |
+| 2 | Andrii | A rainbow sweeps the grid, then ripples expand from random points | ~20 s |
+| 3 | Tymofii | A cyan wave floods the grid from the edges and brightens; magenta takes over from the centre; then two colours clash in the middle four times while the windows swap frames; next the rows fill, arrows travel across the grid and smooth lines give way to a travelling sine wave; the whole thing fades to black from the edges | ~60 s |
 
-Total ≈ 90 s. The script stops on its own when the show ends; `Ctrl+C` stops it early.
+Total ≈ 130 s. The script stops on its own when the show ends; `Ctrl+C` stops it early.
 
 You can watch the lamps live on the simulator page — the same MQTT topic the show publishes to:
 
@@ -48,7 +48,7 @@ https://openlab.kpi.fei.tuke.sk/simulator/light/handsoff-show
 git clone https://github.com/MisterMog25/my-openlab-experiment.git
 cd my-openlab-experiment
 uv sync          # creates .venv/ from uv.lock — the same versions for everyone
-uv run main.py   # plays the whole show (~90 s) on the simulator
+uv run main.py   # plays the whole show (~130 s) on the simulator
 ```
 
 To play it on the real lamps instead of the simulator:
@@ -69,7 +69,7 @@ The SDK is installed from TUKE's package index, already configured in `pyproject
 ├── andrii.py     # scene 2
 ├── tymofii.py    # scene 3
 ├── helpers.py    # grid helpers + ready-made effects (ported from the SDK examples)
-├── docs/show.gif # demo recording (show sped up 3x)
+├── docs/show.gif # demo recording (accelerated; recorded before the last scene tweaks)
 ├── pyproject.toml / uv.lock
 └── README.md
 ```
