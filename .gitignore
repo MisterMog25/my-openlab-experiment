@@ -12,3 +12,4 @@ wheels/
 # raw screen recordings
 *.mov
 *.mp4
+.DS_Store
