@@ -143,7 +143,7 @@ def on_position_update(msg):
 
         # Compute client-side software fade brightness for all 97 lights
         fade_duration_sec = args.fade / 1000.0
-        light_colors = {}
+        light_colors = { }
         active_g_count = 0
 
         for lid in range(1, 98):
