@@ -54,16 +54,16 @@ openlab = tuke_openlab.Controller(env)
 OFF = Color()  # Color(0, 0, 0, 0)
 
 # 2. Build 2D Light Coordinate Map (Lights 1 to 97) with requested offsets
-OFFSET_X = -3.0
-OFFSET_Y = -4.0
+OFFSET_X = -2.0
+OFFSET_Y = -3.0
 
 LIGHT_POSITIONS = {}
 
 # Main Ceiling Grid Rows (Lights 1 to 81)
 for col in range(1, 28):
     x_pos = (0.8 + (col - 1) * 0.77) + OFFSET_X
-    LIGHT_POSITIONS[28 - col] = (x_pos, 13.0 + OFFSET_Y)  # Row 1 (Top)
-    LIGHT_POSITIONS[55 - col] = (x_pos, 10.0 + OFFSET_Y)  # Row 2 (Middle)
+    LIGHT_POSITIONS[28 - col] = (x_pos, 11.0 + OFFSET_Y)  # Row 1 (Top)
+    LIGHT_POSITIONS[55 - col] = (x_pos, 9.0 + OFFSET_Y)  # Row 2 (Middle)
     LIGHT_POSITIONS[82 - col] = (x_pos, 7.0 + OFFSET_Y)   # Row 3 (Lower)
 
 # Bottom Desk Lights (Lights 82 to 97)
@@ -254,4 +254,5 @@ def main():
 
 
 if __name__ == "__main__":
+    openlab.lights.turn_off()
     main()
