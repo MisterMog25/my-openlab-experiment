@@ -103,6 +103,7 @@ def find_nearest_light(x: float, y: float) -> int:
 
 def on_position_update(msg):
     """Callback triggered on receiving tracking data, rate-limited to max 20 Hz."""
+    """Callback triggered on receiving tracking data, rate-limited to max 20 Hz."""
     global last_light_send_time
 
     now = time.time()
@@ -114,62 +115,73 @@ def on_position_update(msg):
         raw_text = msg.payload.decode('utf-8')
         data = json.loads(raw_text)
         
-        active_coords = []
+        persons_info = []
         
-        # Format 1: Unified tracking array [{'Position': {'X': ..., 'Y': ...}}]
+        # Format 1: Unified tracking array [{'Id': '...', 'Position': {'X': ..., 'Y': ...}}]
         if isinstance(data, list):
-            for person in data:
+            for idx, person in enumerate(data, 1):
+                p_id = person.get("Id", f"Person-{idx}")
                 pos = person.get("Position", {})
                 if "X" in pos and "Y" in pos:
-                    active_coords.append((pos["X"], pos["Y"]))
+                    x, y = pos["X"], pos["Y"]
+                    nearest_light = find_nearest_light(x, y)
+                    persons_info.append({
+                        "id": p_id,
+                        "x": x,
+                        "y": y,
+                        "light": nearest_light
+                    })
                     
         # Format 2: Camera / sim tracking dict {'positions': [[x, y], ...]}
         elif isinstance(data, dict) and "positions" in data:
-            for p in data["positions"]:
+            for idx, p in enumerate(data["positions"], 1):
                 if isinstance(p, (list, tuple)) and len(p) >= 2:
-                    active_coords.append((p[0], p[1]))
+                    x, y = p[0], p[1]
                 elif isinstance(p, dict) and "X" in p and "Y" in p:
-                    active_coords.append((p["X"], p["Y"]))
+                    x, y = p["X"], p["Y"]
+                else:
+                    continue
+                nearest_light = find_nearest_light(x, y)
+                persons_info.append({
+                    "id": f"SimPerson-{idx}",
+                    "x": x,
+                    "y": y,
+                    "light": nearest_light
+                })
 
-        # Identify nearest light above each detected person
+        # Identify nearest light above each detected person & update timestamps
         active_light_ids = set()
-        for px, py in active_coords:
-            nearest_id = find_nearest_light(px, py)
-            active_light_ids.add(nearest_id)
-
-        # Update timestamps for active lights
-        for lid in active_light_ids:
-            LIGHT_LAST_SEEN[lid] = now
+        for p in persons_info:
+            active_light_ids.add(p["light"])
+            LIGHT_LAST_SEEN[p["light"]] = now
 
         # Compute client-side software fade brightness for all 97 lights
         fade_duration_sec = args.fade / 1000.0
-        light_colors = { }
-        active_g_count = 0
+        light_colors = {}
 
         for lid in range(1, 98):
             elapsed = now - LIGHT_LAST_SEEN[lid]
             if fade_duration_sec > 0 and elapsed < fade_duration_sec:
-                # Linear software decay from 1.0 down to 0.0
                 intensity = max(0.0, 1.0 - (elapsed / fade_duration_sec))
                 green_val = int(255 * intensity)
                 if green_val > 0:
                     light_colors[lid] = Color(r=0, g=green_val, b=0)
-                    active_g_count += 1
                 else:
                     light_colors[lid] = OFF
             elif lid in active_light_ids:
                 light_colors[lid] = Color(r=0, g=255, b=0)
-                active_g_count += 1
             else:
                 light_colors[lid] = OFF
 
+        # Print structured per-person multi-row logs
         ts = format_timestamp()
-        if active_light_ids:
-            print(f"[{ts}] Person detected ({len(active_coords)} pos). Active Green Lights: {active_g_count} (fade={args.fade}ms, rate={args.rate}Hz)")
+        if persons_info:
+            print(f"[{ts}] Active Tracking - {len(persons_info)} person(s) detected:")
+            for p in persons_info:
+                print(f"   └─ Person ID: {p['id']} | Position: (X={p['x']:.2f}m, Y={p['y']:.2f}m) | Activated Light: #{p['light']}")
         else:
-            print(f"[{ts}] Area clear. Fading lights ({active_g_count} illuminated, fade={args.fade}ms)")
+            print(f"[{ts}] Area clear. Fading lights OFF ({args.fade}ms)")
             
-        # Send colors with hardware fade=0 so software-calculated steps are applied instantly without transition conflict
         openlab.lights.set_colors(light_colors, fade=0)
 
     except Exception as e:
