@@ -24,7 +24,7 @@ WAVE_HUE_RIGHT = 0.87
 RIM_HUE = 0.08
 RIM_WIDTH = 1.6
 
-# Warm pastel peak (replaces white) and the soft violet the black hole leaves.
+# Warm pastel peak (replaces white) and the soft violet the black hole leaves
 IGNITION = Color(r=255, g=224, b=180)
 AFTERGLOW = Color(r=150, g=140, b=210)
 BG_LEVEL = 0.15
