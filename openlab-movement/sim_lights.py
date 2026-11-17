@@ -6,6 +6,7 @@ from datetime import datetime
 from threading import Thread
 import tuke_openlab
 from tuke_openlab.lights import Color
+import Lamps
 
 # Command line arguments parser
 parser = argparse.ArgumentParser(description="OpenLab Green Lights Movement Tracking with Client-Side Software Fade")
@@ -46,8 +47,8 @@ if args.production:
     env = tuke_openlab.production_env()
     print("[Config] Connected to PRODUCTION environment.")
 else:
-    env = tuke_openlab.simulation_env("my-test")
-    print("[Config] Connected to SIMULATION environment ('my-test').")
+    env = tuke_openlab.simulation_env("nz696iv")
+    print("[Config] Connected to SIMULATION environment ('nz696iv').")
 
 openlab = tuke_openlab.Controller(env)
 
@@ -100,6 +101,70 @@ def find_nearest_light(x: float, y: float) -> int:
             best_id = light_id
     return best_id
 
+def wait_for_player_in_start_zone(env, controller: tuke_openlab.Controller, lamp: Lamps.Lamp, start_lamp: int = 1) -> str:
+    """
+    1. Будує жовто-оранжеве поле 3x3.
+    2. Чекає першу людину, яка зайде в зону, і запам'ятовує її Id.
+    3. По одній лампі перефарбовує зону в зелений і повертає Id гравця.
+    """
+    #вимкнули всі лампи
+    controller.lights.turn_off()
+    #зробили стартову зону й отримали номера ламп
+    zone_lamps = lamp.make_start_position(controller, start=start_lamp, hw=3)
+    print(f"[Start Zone] Жовто-оранжеве поле активовано. Лампи зони: {zone_lamps}")
+    print("[Start Zone] Очікуємо гравця в зоні...")
+
+    detected_player_id = None
+
+    def on_move(msg):
+        nonlocal detected_player_id
+        if detected_player_id is not None:
+            return
+
+        try:
+            #декодуємо дані з mqtt
+            data = json.loads(msg.payload.decode("utf-8"))
+            persons = []
+
+            # Формат 1: реальні камери / симулятор скриптом [{'Id': ..., 'Position': {'X': ..., 'Y': ...}}]
+            if isinstance(data, list):
+                for idx, p in enumerate(data, 1):
+                    pos = p.get("Position", {})
+                    if "X" in pos and "Y" in pos:
+                        persons.append((p.get("Id", f"Player-{idx}"), pos["X"], pos["Y"]))
+
+            # Формат 2: веб-симулятор карти {'positions': [[x, y], ...]}
+            elif isinstance(data, dict) and "positions" in data:
+                for idx, p in enumerate(data["positions"], 1):
+                    if isinstance(p, (list, tuple)) and len(p) >= 2:
+                        persons.append((f"SimPlayer-{idx}", p[0], p[1]))
+                    elif isinstance(p, dict) and "X" in p and "Y" in p:
+                        persons.append((p.get("Id", f"SimPlayer-{idx}"), p["X"], p["Y"]))
+
+            for pid, x, y in persons:
+                nearest = find_nearest_light(x, y)
+                if nearest in zone_lamps:
+                    detected_player_id = pid
+                    print(f"[Start Zone] Гравець '{pid}' увійшов у зону (X={x:.2f}, Y={y:.2f}, лампа #{nearest})!")
+                    break
+        except Exception as e:
+            print(f"[Error] {e}")
+
+    topic = "openlab/unifiedMapPositions/output" if args.production else f"experiments/mapPositions/{env.simulation_topic}/#"
+    env.mqtt.listen_on(topic)
+    env.mqtt.subscribe_to(topic, on_move)
+
+    while detected_player_id is None:
+        time.sleep(0.05)
+
+    # По одній лампі робимо стартову зону зеленою
+    for lid in zone_lamps:
+        lamp.lamp_green(controller, lid)
+        time.sleep(0.15)
+
+    print(f"[Start Zone] Зона підтверджена! Повертаємо ID гравця: {detected_player_id}")
+    return detected_player_id 
+    
 
 def on_position_update(msg):
     """Callback triggered on receiving tracking data, rate-limited to max 20 Hz."""
@@ -199,10 +264,10 @@ def simulate_movement_worker():
         else "openlab/unifiedMapPositions/output"
     )
 
-    x_steps = [i * 0.5 for i in range(-4, 32)] 
+    x_steps = [i * 0.5 for i in range(-4, 42)] 
     steps = [ {'Position': {'X': round(x, 2), 'Y': round(1.0 + (idx / (len(x_steps) - 1)) * 8.5, 2)}} for idx, x in enumerate(x_steps) ]
 
-   # steps = [{'Position': {'X': x_val, 'Y': 3.0}} for x_val in [i * 0.5 for i in range(-4, 32)]]
+   # steps = [{'Position': {'X': x_val, 'Y': 3.0}} for x_val in [i * 0.5 for i in range(-4, 42)]]
 
     print(f"[Simulator] Publishing trajectory steps to '{sim_pub_topic}'...")
     for step in steps:
@@ -254,5 +319,13 @@ def main():
 
 
 if __name__ == "__main__":
-    openlab.lights.turn_off()
+    time.sleep(1.5)  # Чекаємо, поки MQTT-клієнт повністю підключиться до сервера
+
+    if args.movement_simulation:
+        Thread(target=simulate_movement_worker, daemon=True).start()
+    
+    lamp_controller = Lamps.Lamp()
+    player_id = wait_for_player_in_start_zone(env, openlab, lamp_controller, start_lamp=1)
+    print(f"Старт гри для гравця: {player_id}")
+    time.sleep(1.5)
     main()

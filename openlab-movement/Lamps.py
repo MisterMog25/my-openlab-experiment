@@ -1,5 +1,4 @@
-from shutil import move
-from tuke_openlab import Controller
+from tuke_openlab import Controller, controller
 from tuke_openlab.lights import Color
 from random import randint
 import time
@@ -23,6 +22,12 @@ class Lamp(object):
     def lamp_on(self, controller: Controller, index : int):
         colors = self.random_color()
         controller.lights.set_color(index, Color(colors[0], colors[1], colors[2], self.random_intesity()))
+        
+    def lamp_yellow(self, controller: Controller, index : int):
+        controller.lights.set_color(index, Color(255, 140,0))
+
+    def lamp_green(self, controller: Controller, index: int):
+        controller.lights.set_color(index, Color(0, 255, 0))
         
     def lamp_off(self, controller: Controller, index : int):
         controller.lights.set_color(index, Color(0, 0, 0))
@@ -260,6 +265,41 @@ class Lamp(object):
             if(command == "o"):
                 self.all_lamps_off(controller)
                 return
+    
+    #малює жовту зону 3Х3, повертаж список  
+    def make_start_position(self, controller : Controller, start = 1, hw = 3) -> list[int]:
+       
+        start_zone = []
+       
+        end = 0 
+        move = self.move_left
+        #дивимося чи координати лежать до половини масиму чи після
+        if(start <= 27//2):
+            end = start + hw
+            move = self.move_left
+        else:
+            start = start - hw + 1
+            end = start + hw
+            move = self.move_right
+            
+        while(True):
+            for index in range(start, end):
+                self.lamp_yellow(controller, index)
+                start_zone.append(index)
+            
+            if(start := self.move_down(controller, self.lamp_yellow, start)) is None:
+                return start_zone
+            else:
+                end += 27
+                
+                     
+                
+                
+            
+            
+            
+        
+        
         
         
         
